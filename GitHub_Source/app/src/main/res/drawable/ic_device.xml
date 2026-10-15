@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="60dp"
+    android:height="60dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:scaleX="0.82"
+        android:scaleY="0.82">
+
+        <!-- Top + right + bottom of display -->
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#A66BFF"
+            android:strokeWidth="1.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M7,5.5
+                              L19,5.5
+                              L19,18
+                              L14.5,18" />
+
+        <!-- Left side flowing directly into outer cast arc -->
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#A66BFF"
+            android:strokeWidth="1.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M7,5.5
+                              L7,10.5
+                              A7.5,7.5 0,0 1,14.5,18" />
+
+        <!-- Inner cast arc -->
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#A66BFF"
+            android:strokeWidth="1.5"
+            android:strokeLineCap="round"
+            android:pathData="M7,14
+                              A4,4 0,0 1,11,18" />
+
+        <!-- Cast origin -->
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#A66BFF"
+            android:strokeWidth="1.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M7,16.5
+                              L7,18
+                              L8.5,18" />
+
+    </group>
+
+</vector>
