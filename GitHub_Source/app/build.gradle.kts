@@ -1,20 +1,18 @@
+
 plugins {
     alias(libs.plugins.android.application)
 }
 
 android {
     namespace = "com.anarkii.control"
-    compileSdk {
-        version = release(37)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.anarkii.control"
         minSdk = 28
-        targetSdk = 37
+        targetSdk = 36
         versionCode = 2
         versionName = "1.01"
-
     }
 
     buildTypes {
@@ -24,6 +22,7 @@ android {
             }
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
