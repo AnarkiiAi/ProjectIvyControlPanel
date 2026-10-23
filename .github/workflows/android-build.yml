@@ -5,11 +5,19 @@ on:
   push:
     branches:
       - android9-v1.01
+      - codex/release-v1.02
+  pull_request:
+    branches:
+      - android9-v1.01
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     defaults:
       run:
@@ -28,12 +36,14 @@ jobs:
       - name: Install Android command-line tools
         run: |
           SDK_ROOT="${ANDROID_HOME:-$HOME/android-sdk}"
-          mkdir -p "$SDK_ROOT/cmdline-tools"
-          curl -fL \
-            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
-            -o /tmp/android-tools.zip
-          unzip -q /tmp/android-tools.zip -d /tmp/android-tools
-          mv /tmp/android-tools/cmdline-tools "$SDK_ROOT/cmdline-tools/latest"
+          if [ ! -x "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            mkdir -p "$SDK_ROOT/cmdline-tools"
+            curl -fL \
+              https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
+              -o "$RUNNER_TEMP/android-tools.zip"
+            unzip -q "$RUNNER_TEMP/android-tools.zip" -d "$RUNNER_TEMP/android-tools"
+            mv "$RUNNER_TEMP/android-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+          fi
           echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
           echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
 
@@ -45,12 +55,77 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x gradlew
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Build and check Android 9 APKs
+        run: ./gradlew assembleDebug assembleRelease lintRelease --no-daemon --no-configuration-cache
 
-      - name: Upload APK
+      - name: Check release metadata
+        run: |
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt2"
+          APK=app/build/outputs/apk/release/app-release-unsigned.apk
+          "$AAPT" dump badging "$APK" > "$RUNNER_TEMP/release-metadata.txt"
+          grep -q "name='com.anarkii.control' versionCode='3' versionName='1.02'" "$RUNNER_TEMP/release-metadata.txt"
+          grep -q "minSdkVersion:'28'" "$RUNNER_TEMP/release-metadata.txt"
+          grep -q "targetSdkVersion:'36'" "$RUNNER_TEMP/release-metadata.txt"
+          if grep -q application-debuggable "$RUNNER_TEMP/release-metadata.txt"; then
+            echo 'Release APK must not be debuggable' >&2
+            exit 1
+          fi
+
+      - name: Sign release when repository secrets are configured
+        id: signing
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/android9-v1.01'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANARKII_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANARKII_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANARKII_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANARKII_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64$STORE_PASSWORD$KEY_ALIAS$KEY_PASSWORD" ]; then
+            echo 'Release compiled and checked; signing secrets have not been configured.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          test -n "$KEYSTORE_BASE64" && test -n "$STORE_PASSWORD" && test -n "$KEY_ALIAS" && test -n "$KEY_PASSWORD"
+          KEYSTORE="$RUNNER_TEMP/anarkii-release.p12"
+          trap 'rm -f "$KEYSTORE"' EXIT
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          mkdir -p app/build/outputs/signed-release
+          APK=app/build/outputs/signed-release/AnarkiiControl-v1.02-Android9-release.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
+            --ks "$KEYSTORE" --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:STORE_PASSWORD --key-pass env:KEY_PASSWORD \
+            --out "$APK" app/build/outputs/apk/release/app-release-unsigned.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs --min-sdk-version 28 "$APK"
+          sha256sum "$APK" > "$APK.sha256"
+          echo 'signed=true' >> "$GITHUB_OUTPUT"
+
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: AnarkiiControl-v1.01-Android9-debug
+          name: AnarkiiControl-v1.02-Android9-debug
           path: GitHub_Source/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Upload signed release APK
+        if: steps.signing.outputs.signed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnarkiiControl-v1.02-Android9-release
+          path: GitHub_Source/app/build/outputs/signed-release/*
+          if-no-files-found: error
+
+      - name: Upload unsigned release for local signing
+        if: steps.signing.outputs.signed != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnarkiiControl-v1.02-Android9-UNSIGNED
+          path: GitHub_Source/app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+
+      - name: Upload build reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnarkiiControl-build-reports
+          path: GitHub_Source/app/build/reports/
+          if-no-files-found: ignore
