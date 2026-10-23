@@ -1627,7 +1627,7 @@ class MainActivity : FragmentActivity() {
 
             memoryTile.text =
                 createStatusText(
-                    title = "Clear Memory",
+                    title = if (Build.VERSION.SDK_INT >= 34) "Memory" else "Clear Memory",
                     status =
                         "$freePercent% Free",
                     statusColor =
@@ -1637,6 +1637,12 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun clearBackgroundMemory() {
+
+        // Android 14+ only allows killing our own processes. Refresh the reading instead.
+        if (Build.VERSION.SDK_INT >= 34) {
+            updateMemoryTile()
+            return
+        }
 
         memoryTile.isClickable =
             false
@@ -1705,7 +1711,7 @@ class MainActivity : FragmentActivity() {
                         title =
                             "Clear Memory",
                         status =
-                            "Cleared",
+                            "Refresh complete",
                         statusColor =
                             Color.parseColor("#78E84F")
                     )
