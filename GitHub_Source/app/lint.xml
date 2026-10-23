@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- Glide is used only for view images and CustomTarget bitmaps. The app
+         never uses NotificationTarget or posts notifications. Keep all other
+         notification permission findings enabled. Revisit if notifications are added. -->
+    <issue id="NotificationPermission">
+        <ignore regexp=".*usage from com\.bumptech\.glide\.request\.target\.NotificationTarget.*" />
+    </issue>
+</lint>
