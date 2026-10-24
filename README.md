@@ -18,9 +18,11 @@ The owner tested this exact signed v1.02 build on NVIDIA Shield and confirmed it
 
 ## Install
 
-1. Download `AnarkiiControl-v1.02-Android9-release.apk` from the release assets and transfer it to your TV.
-2. Allow installation from the sideloading app you use, then install the APK.
-3. Launch AnarkiiControl from your TV launcher.
+* You will need to select “allow apps from untrusted sources” from settings>apps>security and restrictions if you have issues with installation. 
+
+1. Download `AnarkiiControl-v1.02-Android9-release.apk` from the release assets and transfer it to your shield.
+2. Allow installation from the sideloading app you use (I used File Manager+), then install the APK. Select Install, it will stage the app, hit install. Select done when finished. 
+3. Launch AnarkiiControl from your TV launcher, or from All Apps.
 4. To open it with the remote's **Menu** button, enable AnarkiiControl in Android's accessibility settings. The service intercepts Menu while enabled.
 
 **Coming from v1.01 debug?** Uninstall the debug app first: the release uses a new signing certificate and cannot update it in place. Uninstalling removes app data; re-enable accessibility after installation. An older build signed with another key may also require uninstalling first. Future releases will use the same release key.
